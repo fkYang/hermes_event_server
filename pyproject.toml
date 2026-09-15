@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "autoqq-eventserver"
+version = "0.1.0"
+description = "Generic event publication and delivery service for AutoQQ"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "alembic>=1.16,<2",
+  "fastapi>=0.135,<1",
+  "httpx>=0.28,<1",
+  "prometheus-client>=0.21,<1",
+  "pydantic>=2.12,<3",
+  "pydantic-settings>=2.12,<3",
+  "pymysql[rsa]>=1.1,<2",
+  "sqlalchemy>=2.0.45,<3",
+  "uvicorn[standard]>=0.38,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=9,<10",
+  "pytest-cov>=7,<8",
+  "ruff>=0.14,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eventserver"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+markers = ["mysql: requires explicit access to the configured isolated MySQL test database"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".uv-cache", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["B008"]

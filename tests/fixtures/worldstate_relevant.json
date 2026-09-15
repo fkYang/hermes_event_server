@@ -1,0 +1,23 @@
+{
+  "Time": 1789396395,
+  "SyndicateMissions": [
+    {
+      "_id": {"$oid": "fixture-cetus-mission"},
+      "Activation": {"$date": {"$numberLong": "1789391959903"}},
+      "Expiry": {"$date": {"$numberLong": "1789400958777"}},
+      "Seed": 49224,
+      "Tag": "CetusSyndicate",
+      "Nodes": []
+    }
+  ],
+  "Goals": [
+    {
+      "_id": {"$oid": "fixture-ghoul-event"},
+      "Activation": {"$date": {"$numberLong": "1788966000000"}},
+      "Expiry": {"$date": {"$numberLong": "1790172000000"}},
+      "Tag": "InfestedPlains",
+      "Desc": "/Lotus/Language/InfestedPlainsEvent/InfestedPlainsBountyName",
+      "Jobs": []
+    }
+  ]
+}
