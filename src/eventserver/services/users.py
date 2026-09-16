@@ -83,7 +83,7 @@ def set_permissions(
         if (
             existing_command is not None
             and existing_command.granted
-            and _active_command_admin_count(session, platform) == 1
+            and active_command_admin_count(session, platform) == 1
         ):
             raise LastAdminError("cannot revoke command from the last active admin")
     for key in permissions:
@@ -134,7 +134,7 @@ def change_role(
             )
         )
         if command_granted:
-            active_admins = _active_command_admin_count(session, platform)
+            active_admins = active_command_admin_count(session, platform)
             if active_admins == 1:
                 raise LastAdminError("cannot demote the last active command-enabled admin")
     target.role = role
@@ -154,7 +154,7 @@ def change_role(
     return permission_snapshot(session, platform, openid)
 
 
-def _active_command_admin_count(session: Session, platform: str) -> int:
+def active_command_admin_count(session: Session, platform: str) -> int:
     return int(
         session.scalar(
             select(func.count())

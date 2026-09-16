@@ -15,7 +15,7 @@ class PairingCodeError(RuntimeError):
     pass
 
 
-def _hash(code: str) -> str:
+def pairing_code_hash(code: str) -> str:
     return hashlib.sha256(code.upper().encode()).hexdigest()
 
 
@@ -24,7 +24,7 @@ def create_pairing_code(
 ) -> tuple[str, PairingCode]:
     code = "".join(secrets.choice(ALPHABET) for _ in range(8))
     row = PairingCode(
-        code_hash=_hash(code),
+        code_hash=pairing_code_hash(code),
         platform=platform,
         openid=openid,
         expires_at=utc_now() + timedelta(minutes=ttl_minutes),
@@ -44,7 +44,7 @@ def approve_pairing_code(
     request_id: str | None = None,
 ) -> PermissionSnapshot:
     require_admin(session, platform, operator_openid)
-    row = session.get(PairingCode, _hash(code))
+    row = session.get(PairingCode, pairing_code_hash(code))
     now = utc_now()
     if row is None or row.platform != platform:
         raise PairingCodeError("pairing code is invalid")
