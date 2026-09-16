@@ -383,7 +383,7 @@ docker compose --env-file .env -f compose.yml logs --since 10m \
 
 ## 参考文档
 
-- [详细操作、权限和投递契约](操作指南.md)
+- [核心、数据、API 和投递契约](CONTRACT.md)
 - [Provider 开发说明](docs/provider-development.md)
 - [内置事件目录](docs/event-catalog.md)
 - [AutoQQ Hermes Plugin](https://github.com/fkYang/hermes_qqbot_plugin)
