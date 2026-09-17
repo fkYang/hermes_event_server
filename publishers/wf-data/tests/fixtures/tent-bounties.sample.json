@@ -1,0 +1,55 @@
+{
+  "current": {
+    "activation": "2026-09-17T11:48:51.773+08:00",
+    "expiry": "2026-09-17T14:18:50.647+08:00",
+    "tentA": {
+      "id": "left",
+      "manifestTag": "TentA",
+      "physicalNumber": 2,
+      "jobs": [
+        {"id": "AssassinateBountyAss", "path": "/Lotus/Types/Gameplay/Eidolon/Jobs/AssassinateBountyAss", "nameZh": "刺杀指挥官"},
+        {"id": "AttritionBountyLib", "path": "/Lotus/Types/Gameplay/Eidolon/Jobs/AttritionBountyLib", "nameZh": "削弱 Grineer 据点"},
+        {"id": "RescueBountyResc", "path": "/Lotus/Types/Gameplay/Eidolon/Jobs/RescueBountyResc", "nameZh": "搜索并救援"}
+      ]
+    },
+    "tentB": {
+      "id": "middle",
+      "manifestTag": "TentB",
+      "physicalNumber": 1,
+      "jobs": [
+        {"id": "AttritionBountyLib", "path": "/Lotus/Types/Gameplay/Eidolon/Jobs/AttritionBountyLib", "nameZh": "削弱 Grineer 据点"},
+        {"id": "ReclamationBountyCap", "path": "/Lotus/Types/Gameplay/Eidolon/Jobs/ReclamationBountyCap", "nameZh": "捕获 Grineer 特工"},
+        {"id": "SabotageBountySab", "path": "/Lotus/Types/Gameplay/Eidolon/Jobs/SabotageBountySab", "nameZh": "破坏原型机"}
+      ]
+    },
+    "tentC": {
+      "id": "right",
+      "manifestTag": "TentC",
+      "physicalNumber": 3,
+      "jobs": [
+        {"id": "ReclamationBountyCap", "path": "/Lotus/Types/Gameplay/Eidolon/Jobs/ReclamationBountyCap", "nameZh": "捕获 Grineer 特工"},
+        {"id": "CaptureBountyCapOne", "path": "/Lotus/Types/Gameplay/Eidolon/Jobs/CaptureBountyCapOne", "nameZh": "捕获 Grineer 指挥官"},
+        {"id": "CaptureBountyCapTwo", "path": "/Lotus/Types/Gameplay/Eidolon/Jobs/CaptureBountyCapTwo", "nameZh": "间谍捕手"}
+      ]
+    }
+  },
+  "konzu": {
+    "activation": "2026-09-17T11:48:51.773+08:00",
+    "expiry": "2026-09-17T14:18:50.647+08:00",
+    "normal": [
+      {"tier": 1, "jobId": "AssassinateBountyCap", "jobPath": "/Lotus/Types/Gameplay/Eidolon/Jobs/AssassinateBountyCap", "nameZh": "捕获新任 Grineer 指挥官", "masteryReq": 0},
+      {"tier": 2, "jobId": "RescueBountyResc", "jobPath": "/Lotus/Types/Gameplay/Eidolon/Jobs/RescueBountyResc", "nameZh": "搜索并救援", "masteryReq": 1},
+      {"tier": 3, "jobId": "ReclamationBountyCache", "jobPath": "/Lotus/Types/Gameplay/Eidolon/Jobs/ReclamationBountyCache", "nameZh": "找出遗失的器物", "masteryReq": 2},
+      {"tier": 4, "jobId": "AssassinateBountyAss", "jobPath": "/Lotus/Types/Gameplay/Eidolon/Jobs/AssassinateBountyAss", "nameZh": "刺杀指挥官", "masteryReq": 3},
+      {"tier": 5, "jobId": "AttritionBountyExt", "jobPath": "/Lotus/Types/Gameplay/Eidolon/Jobs/AttritionBountyExt", "nameZh": "宰杀敌人", "masteryReq": 5}
+    ],
+    "steelPath": [
+      {"tier": 5, "jobId": "ReclamationBountyCap", "jobPath": "/Lotus/Types/Gameplay/Eidolon/Jobs/ReclamationBountyCap", "nameZh": "捕获 Grineer 特工", "masteryReq": 10}
+    ],
+    "narmer": [
+      {"tier": null, "jobId": "AssassinateBountyAss", "jobPath": "/Lotus/Types/Gameplay/Eidolon/Jobs/Narmer/AssassinateBountyAss", "nameZh": "刺杀指挥官", "masteryReq": 0}
+    ],
+    "events": []
+  },
+  "imageUrl": "https://example.invalid/redacted-signed-url"
+}

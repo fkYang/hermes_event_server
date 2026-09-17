@@ -1,0 +1,33 @@
+# Cetus 赏金轮换 Publisher 的独立部署定义。
+#
+# 生产环境由 deploy/compose.yml 统一管理，本文件用于把该 Publisher 单独部署到另一台主机，
+# 或单独重启调试。两者不要同时运行同一个 Publisher。
+name: ${COMPOSE_PROJECT_NAME:-autoqq-wfdata}
+
+services:
+  autoqq-wfdata-publisher:
+    image: ${WFDATA_PUBLISHER_IMAGE:-autoqq-wfdata-publisher:0.1.1}
+    environment:
+      WF_DATA_URL: ${WF_DATA_URL:-http://wf-data:8080/warframe/cetus/tent-bounties}
+      EVENTSERVER_URL: ${EVENTSERVER_URL:-http://autoqq-eventserver-api:8080}
+      PUBLISHER_TOKEN: ${WFDATA_PUBLISHER_TOKEN:?Set WFDATA_PUBLISHER_TOKEN in .env}
+      POLL_SECONDS: ${WFDATA_POLL_SECONDS:-60}
+      LEAD_SECONDS: ${WFDATA_LEAD_SECONDS:-300}
+    init: true
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - hermes_net
+      - wfdata_net
+
+networks:
+  hermes_net:
+    external: true
+    name: ${HERMES_DOCKER_NETWORK:-hermes_net}
+  wfdata_net:
+    external: true
+    name: ${WF_DATA_DOCKER_NETWORK:-my_web_net}

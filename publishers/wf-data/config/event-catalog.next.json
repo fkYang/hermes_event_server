@@ -1,0 +1,55 @@
+{
+  "event_key": "warframe.cetus.bounty_next",
+  "display_name": "Cetus 下一轮赏金",
+  "description": "由受控 wf-data Publisher 发布的下一轮赏金任务集合，开轮前约 8 分钟才可见；只按三个 tent 槽位过滤（该事件不扫描 konzu），并只在用户关注的关注项命中时投递。",
+  "schema_version": 1,
+  "subscribable": true,
+  "match_key_field": "match_keys",
+  "match_keys_required": true,
+  "match_key_options": [
+    {"key": "AssassinateBountyAss", "label": "刺杀指挥官"},
+    {"key": "AssassinateBountyCap", "label": "捕获新任 Grineer 指挥官"},
+    {"key": "AttritionBountySab", "label": "破坏 Grineer 补给线"},
+    {"key": "AttritionBountyLib", "label": "削弱 Grineer 据点"},
+    {"key": "AttritionBountyCap", "label": "捕获他们的领袖"},
+    {"key": "AttritionBountyExt", "label": "宰杀敌人"},
+    {"key": "ReclamationBountyCap", "label": "捕获 Grineer 特工"},
+    {"key": "ReclamationBountyTheft", "label": "取回被偷的器物"},
+    {"key": "ReclamationBountyCache", "label": "找出遗失的器物"},
+    {"key": "CaptureBountyCapOne", "label": "捕获 Grineer 指挥官"},
+    {"key": "CaptureBountyCapTwo", "label": "间谍捕手"},
+    {"key": "SabotageBountySab", "label": "破坏原型机"},
+    {"key": "RescueBountyResc", "label": "搜索并救援"}
+  ],
+  "payload_schema": {
+    "type": "object",
+    "required": ["window", "activation", "expiry", "match_keys"],
+    "properties": {
+      "window": {"type": "string", "enum": ["next"]},
+      "activation": {"type": "string", "minLength": 20, "maxLength": 64},
+      "expiry": {"type": "string", "minLength": 20, "maxLength": 64},
+      "match_keys": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 32,
+        "items": {"type": "string", "minLength": 1, "maxLength": 64}
+      },
+      "jobs": {
+        "type": "array",
+        "maxItems": 64,
+        "items": {
+          "type": "object",
+          "required": ["key", "name_zh", "source"],
+          "properties": {
+            "key": {"type": "string", "minLength": 1, "maxLength": 64},
+            "name_zh": {"type": "string", "minLength": 1, "maxLength": 100},
+            "source": {"type": "string", "minLength": 1, "maxLength": 64},
+            "tier": {"type": ["integer", "null"]}
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "additionalProperties": false
+  }
+}
