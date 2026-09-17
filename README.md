@@ -35,8 +35,8 @@ Hermes Plugin <- claim/ack/fail -----------+
 | --- | --- | --- |
 | `autoqq-eventserver-api` | 权限、订阅、事件目录、受控发布和 delivery API | MySQL 网络 + Hermes 网络 |
 
-Publisher（例如 [wf-data](publishers/wf-data/README.md)）不在本镜像内启动，各自构建、各自
-部署，只通过发布 API 与本服务通信。
+Publisher（例如 [demo-reminder](publishers/demo-reminder/README.md)）不在本镜像内启动，各自构建、
+各自部署，只通过发布 API 与本服务通信。
 
 API 使用同一个 `autoqq` MySQL 数据库。API 不需要发布宿主机端口，Hermes
 Plugin 通过共享 Docker 网络访问 `http://autoqq-eventserver-api:8080`。
@@ -326,7 +326,7 @@ Authorization: Bearer <INTERNAL_API_TOKEN>
 事件目录还可以声明订阅关注项（`match_key_field`、`match_key_options`、`match_keys_required`），
 让不同用户各自只关注事件中的一部分内容；发布请求可以携带 `notify_at` 把该次投递推迟到指定
 时间，用于「提前 N 分钟通知」这类场景。两者都是核心的通用能力，不执行任何模板或用户自定义
-表达式，设计见 [wf-data Publisher 设计稿](docs/wf-data-publisher.md)。
+表达式，用法见 [事件目录状态](docs/event-catalog.md)。
 
 核心仅支持结构化 JSON Schema 子集（对象、数组、标量、required、properties、枚举、长度和
 数值边界）；不执行模板、表达式、远程引用、脚本或用户提供 URL。完整约束见
@@ -398,8 +398,6 @@ docker compose --env-file .env -f compose.yml logs --since 10m \
 ## 参考文档
 
 - [核心、数据、API 和投递契约](CONTRACT.md)
-- [wf-data Publisher](publishers/wf-data/README.md) 与
-  [设计稿](docs/wf-data-publisher.md)
 - [demo-reminder Publisher](publishers/demo-reminder/README.md)（参数化延迟提醒演示）
 - [Publisher 开发说明](docs/provider-development.md)
 - [事件目录状态](docs/event-catalog.md)
