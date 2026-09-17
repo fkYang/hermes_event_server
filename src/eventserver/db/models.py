@@ -78,6 +78,23 @@ class EventType(TimestampMixin, Base):
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
     subscribable: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     deprecated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    match_key_field: Mapped[str | None] = mapped_column(String(64))
+    match_key_options: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSON, default=list, nullable=False
+    )
+    match_keys_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class EventPublisher(TimestampMixin, Base):
+    """A separately deployed publisher authorized to emit a bounded event namespace."""
+
+    __tablename__ = "event_publishers"
+
+    publisher_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    allowed_event_prefixes: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
 
 
 class EventAlias(TimestampMixin, Base):
@@ -177,6 +194,7 @@ class Subscription(TimestampMixin, Base):
         String(128), ForeignKey("event_types.event_key", ondelete="CASCADE"), primary_key=True
     )
     locale: Mapped[str] = mapped_column(String(16), default="zh-CN", nullable=False)
+    match_keys: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
 
 
 class Delivery(TimestampMixin, Base):

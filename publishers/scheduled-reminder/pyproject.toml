@@ -1,0 +1,12 @@
+[project]
+name = "autoqq-scheduled-reminder-publisher"
+version = "0.1.1"
+description = "Standalone weekly and interval reminder publisher for AutoQQ EventServer"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

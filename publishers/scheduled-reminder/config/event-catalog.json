@@ -1,0 +1,18 @@
+{
+  "event_key": "reminder.scheduled.triggered",
+  "display_name": "定时提醒",
+  "description": "由受控 Scheduled Reminder Publisher 发布的周计划或固定间隔提醒。",
+  "schema_version": 1,
+  "payload_schema": {
+    "type": "object",
+    "required": ["reminder_id", "schedule_kind", "scheduled_for", "timezone", "title"],
+    "properties": {
+      "reminder_id": {"type": "string", "minLength": 1, "maxLength": 128},
+      "schedule_kind": {"type": "string", "enum": ["weekly", "interval"]},
+      "scheduled_for": {"type": "string", "minLength": 20, "maxLength": 64},
+      "timezone": {"type": "string", "minLength": 1, "maxLength": 64},
+      "title": {"type": "string", "minLength": 1, "maxLength": 200}
+    },
+    "additionalProperties": false
+  }
+}

@@ -14,7 +14,6 @@ from eventserver.auth.service import require_service_auth
 from eventserver.config import Settings, get_settings
 from eventserver.db.session import engine
 from eventserver.observability import REQUEST_COUNT, REQUEST_DURATION, configure_logging
-from eventserver.providers import build_registry
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -23,7 +22,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="AutoQQ EventServer", version=__version__)
     if settings is not None:
         app.dependency_overrides[get_settings] = lambda: selected
-    app.state.provider_registry = build_registry(selected.enabled_providers)
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):

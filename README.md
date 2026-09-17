@@ -1,27 +1,27 @@
 # AutoQQ EventServer
 
 AutoQQ EventServer 是面向 Hermes/QQBot 的通用事件发布与投递服务。它统一管理用户权限、事件
-订阅、provider 状态和待发送消息；Hermes Plugin 通过内部 HTTP API 查询权限并领取通知。
+订阅、事件目录和待发送消息；Hermes Plugin 通过内部 HTTP API 查询权限并领取通知。
 
-Warframe 是当前内置的首批 provider，但 EventServer 的权限、订阅和投递能力不依赖具体事件
-领域，后续事件通过独立 provider 接入。
+EventServer 是固定的通用核心。数据采集、判定和通知内容由独立部署的受控 Publisher 完成，
+再通过内部发布 API 提交给核心；新增 Publisher 或事件定义不需要重建 EventServer 镜像。
 
 ## 服务能力
 
 - 管理用户状态、`chat`/`command` 权限和管理员角色。
 - 提供事件目录、订阅、取消订阅和 pairing code。
-- 轮询 provider，规范化观察结果并按确定性规则发布事件。
+- 接受受控 Publisher 的版本化事件，并按目录 schema 校验、去重和投递。
 - 通过 MySQL 唯一约束保证事件和 delivery 幂等。
 - 通过数据库租约提供 `claim`、`ack`、`fail`、过期恢复和有限重试。
-- API 与 scheduler 故障隔离；单个 provider 失败不会阻塞权限和 delivery API。
+- Publisher 与核心故障隔离；单个 Publisher 失败不会阻塞权限和 delivery API。
 - 提供 `/health`、`/ready`、受保护的 `/metrics` 和结构化日志。
 - 支持本地一次性首管理员引导，不需要预先知道完整 QQ OpenID。
 
 EventServer 不直接调用 Hermes 或腾讯 QQ API，也不保存 QQ AppID、QQ Secret 或 LLM Key。
 
 ```text
-外部事件源 -> EventServer scheduler -> MySQL 事件与 delivery
-                                          |
+外部事件源 -> 独立 Publisher -> EventServer 发布 API -> MySQL 事件与 delivery
+                                                              |
 Hermes Plugin <- claim/ack/fail -----------+
       |
       +-> Hermes QQBot 主动私聊用户
@@ -29,14 +29,16 @@ Hermes Plugin <- claim/ack/fail -----------+
 
 ## 部署拓扑
 
-推荐部署两个 EventServer 容器：
+本仓库的 Compose 只部署 EventServer API 核心容器；Publisher 是各自独立的服务与镜像：
 
 | 服务 | 作用 | 网络 |
 | --- | --- | --- |
-| `autoqq-eventserver-api` | 权限、订阅、事件目录和 delivery API | MySQL 网络 + Hermes 网络 |
-| `autoqq-eventserver-scheduler` | provider 轮询、基线、事件发布 | MySQL 网络 |
+| `autoqq-eventserver-api` | 权限、订阅、事件目录、受控发布和 delivery API | MySQL 网络 + Hermes 网络 |
 
-两者使用同一个镜像和同一个 `autoqq` MySQL 数据库。API 不需要发布宿主机端口，Hermes
+Publisher（例如 [wf-data](publishers/wf-data/README.md)）不在本镜像内启动，各自构建、各自
+部署，只通过发布 API 与本服务通信。
+
+API 使用同一个 `autoqq` MySQL 数据库。API 不需要发布宿主机端口，Hermes
 Plugin 通过共享 Docker 网络访问 `http://autoqq-eventserver-api:8080`。
 
 MySQL 容器必须加入 MySQL 外部网络；Hermes Gateway 必须加入 Hermes 外部网络。仅创建网络但
@@ -50,7 +52,7 @@ MVP 不需要 Redis。权限、订阅、事件、delivery 和租约始终以 MyS
 - MySQL 8，字符集 `utf8mb4`，数据库时间统一使用 UTC。
 - 已存在一个连接 MySQL 的外部 Docker 网络。
 - 已存在一个连接 Hermes Gateway 的外部 Docker 网络。
-- 已拉取包含当前功能的 EventServer 镜像，例如 `fkyang/autoqq-eventserver:latest`。
+- 已构建或拉取包含当前功能的 EventServer 镜像，例如 `autoqq-eventserver:0.3.0`。
 - 一个至少 32 个随机字符的 `INTERNAL_API_TOKEN`，并与 Plugin 保持一致。
 
 生产环境建议将镜像固定到发布 tag 或 digest，不长期依赖 `latest`。
@@ -101,11 +103,9 @@ INTERNAL_API_TOKEN=<至少32个随机字符并与Plugin一致>
 INITIAL_ADMIN_OPENIDS=
 
 DEFAULT_TIMEZONE=Asia/Shanghai
-ENABLED_PROVIDERS=warframe.cetus_night,warframe.konzu_rotation,warframe.ghoul_event
 DELIVERY_MAX_ATTEMPTS=5
 DELIVERY_DEFAULT_LEASE_SECONDS=60
-PROVIDER_DEFAULT_TIMEOUT_SECONDS=10
-PROVIDER_SCHEDULER_TICK_SECONDS=5
+DELIVERY_MAX_SCHEDULE_HORIZON_SECONDS=86400
 ```
 
 生成内部 Token：
@@ -165,18 +165,6 @@ services:
       retries: 6
       start_period: 10s
 
-  autoqq-eventserver-scheduler:
-    <<: *eventserver-common
-    command:
-      - python
-      - -m
-      - eventserver.providers.warframe.runner
-    depends_on:
-      autoqq-eventserver-api:
-        condition: service_healthy
-    networks:
-      - mysql_backend
-
 networks:
   mysql_backend:
     external: true
@@ -210,18 +198,19 @@ docker compose --env-file .env -f compose.yml run --rm \
   autoqq-eventserver-api python -m eventserver.bootstrap
 ```
 
-第二条命令会幂等注册事件目录、别名和启用的 provider。正式 `autoqq` 库不要运行
+第二条命令会初始化管理员，并把旧版内置 Provider 记录标记为停用；不会删除历史事件、订阅
+或 delivery。事件目录由 `catalog_admin register` 单独维护，不随启动写入。正式 `autoqq` 库不要运行
 `scripts/prepare_test_database.py`、`alembic downgrade base` 或带
 `RUN_MYSQL_INTEGRATION=1` 的测试套件。
 
 ### 4. 启动服务
 
 ```bash
-docker compose --env-file .env -f compose.yml up -d
+docker compose --env-file .env -f compose.yml up -d --remove-orphans
 docker compose --env-file .env -f compose.yml ps
 ```
 
-期望 API 为 `healthy`，scheduler 为 `running`。
+期望 API 为 `healthy`。
 
 ## 初始化首管理员
 
@@ -289,34 +278,59 @@ Authorization: Bearer <INTERNAL_API_TOKEN>
 | `/v1/users/...` | 查询权限、授权、撤权和角色管理 |
 | `/v1/users/.../subscriptions` | 查询、添加和取消订阅 |
 | `/v1/pairing-codes` | 创建并由管理员批准一次性授权码 |
+| `/v1/publish/events` | 独立 Publisher 提交已判定的事件和通知内容 |
 | `/v1/deliveries/claim` | Plugin 领取待发送通知 |
 | `/v1/deliveries/{id}/ack` | Plugin 确认发送成功 |
 | `/v1/deliveries/{id}/fail` | Plugin 回写发送失败 |
 
 普通用户不直接调用这些 API，而是通过 Plugin 的 `/events`、`/bind`、`/grant` 等命令操作。
 
-### 内置事件
-
-| event_key | 说明 |
-| --- | --- |
-| `warframe.cetus.night` | 希图斯进入夜晚 |
-| `warframe.konzu.rotation` | Konzu 赏金轮换 |
-| `warframe.ghoul.started` | 尸鬼活动开始 |
-
-provider 首次成功观察默认只建立基线，不会把当前状态当成新事件补发。只有后续确定性状态变化
-才发布事件并创建 delivery。
-
 ### 接入新事件
 
-1. 定义稳定的 `<domain>.<resource>.<event>` 事件键和 payload schema 版本。
-2. 按 provider 契约接入数据源、规范化、触发判断和消息渲染。
-3. 覆盖首次基线、无变化、状态变化、重复输入、超时和无效响应测试。
-4. 将 provider 注册到发布镜像，并加入 `ENABLED_PROVIDERS`。
-5. 重新执行幂等 bootstrap 和 Compose 重建。
-6. 先观察基线、去重和故障隔离，再向用户开放订阅。
+1. 在独立 Publisher 中实现固定来源访问、规范化、状态判定、稳定 `dedupe_key` 和受限通知
+   文本；Publisher 不连接 MySQL。
+2. 由部署管理员以环境变量提供不少于 32 字符的 Publisher Token，并执行：
 
-接入规则与验收要求参见 [Provider 开发说明](docs/provider-development.md) 和
-[内置事件目录](docs/event-catalog.md)。新增 provider 不应修改权限、订阅、outbox 或 Plugin。
+   ```bash
+   docker compose --env-file .env -f compose.yml run --rm \
+     -e EVENT_PUBLISHER_TOKEN \
+     autoqq-eventserver-api python -m eventserver.publisher_admin \
+       --publisher-key example-source \
+       --token-env EVENT_PUBLISHER_TOKEN \
+       --allow-prefix example. \
+       --description 'Example controlled publisher'
+   ```
+
+3. 将事件目录 JSON 保存到受控部署目录，并注册；此文件不是镜像内容：
+
+   ```json
+   {
+     "event_key": "example.sample.available",
+     "display_name": "示例事件",
+     "description": "由受控 Publisher 发布的示例",
+     "schema_version": 1,
+     "payload_schema": {
+       "type": "object",
+       "required": ["state"],
+       "properties": {"state": {"type": "string"}},
+       "additionalProperties": false
+     }
+   }
+   ```
+
+4. 执行 `python -m eventserver.catalog_admin register --file /受控路径/event.json`，然后由
+   Publisher 使用自己的 Bearer Token 调用 `POST /v1/publish/events`。Publisher 只能发布已
+   注册、已启用且前缀获授权的事件键。
+5. 先观察去重、schema 校验和 Publisher 失败隔离，再向用户开放订阅。
+
+事件目录还可以声明订阅关注项（`match_key_field`、`match_key_options`、`match_keys_required`），
+让不同用户各自只关注事件中的一部分内容；发布请求可以携带 `notify_at` 把该次投递推迟到指定
+时间，用于「提前 N 分钟通知」这类场景。两者都是核心的通用能力，不执行任何模板或用户自定义
+表达式，设计见 [wf-data Publisher 设计稿](docs/wf-data-publisher.md)。
+
+核心仅支持结构化 JSON Schema 子集（对象、数组、标量、required、properties、枚举、长度和
+数值边界）；不执行模板、表达式、远程引用、脚本或用户提供 URL。完整约束见
+[Publisher 开发说明](docs/provider-development.md)。
 
 ## 健康检查与运维
 
@@ -339,10 +353,10 @@ docker compose --env-file .env -f compose.yml exec -T \
 
 ```bash
 docker compose --env-file .env -f compose.yml logs --since 10m \
-  autoqq-eventserver-api autoqq-eventserver-scheduler
+  autoqq-eventserver-api
 ```
 
-重点监控 provider 最近成功时间、待投递积压、租约过期、retry/dead、API 5xx 和数据库连接。
+重点监控 Publisher 的调用错误、待投递积压、租约过期、retry/dead、API 5xx 和数据库连接。
 日志不得包含数据库密码、内部 Token、完整 OpenID、pairing code 或租约 Token。
 
 ## 更新与回退
@@ -351,11 +365,11 @@ docker compose --env-file .env -f compose.yml logs --since 10m \
 
 1. 备份 `autoqq` 数据库并验证备份可读。
 2. 拉取新镜像并把 `EVENTSERVER_IMAGE` 固定到新 tag 或 digest。
-3. 停止 scheduler，避免升级期间发布新事件。
+3. 暂停外部 Publisher，避免升级期间发布新事件。
 4. 使用新镜像执行 `alembic upgrade head`。
 5. 执行幂等 bootstrap。
 6. `docker compose up -d --force-recreate`。
-7. 验证 `/ready`、scheduler、Plugin claim 和日志。
+7. 验证 `/ready`、Publisher 调用、Plugin claim 和日志。
 
 回退前必须确认旧镜像可以读取当前 schema。不能只回退容器而忽略数据库迁移；不可逆迁移需要
 单独审批和恢复方案。
@@ -374,7 +388,7 @@ docker compose --env-file .env -f compose.yml logs --since 10m \
 | 现象 | 检查项 |
 | --- | --- |
 | API healthy 但功能不可用 | `/health` 只表示进程存活，应检查 `/ready`、MySQL 网络和迁移版本 |
-| scheduler 没有立即发布事件 | 首次观察只建立基线；等待后续确定性状态变化 |
+| Publisher 调用失败 | 检查 Publisher Token、允许的事件前缀、事件目录、schema 与核心内网连通性 |
 | Plugin 返回 401/403 | 确认两端 `INTERNAL_API_TOKEN` 完全一致且没有空格或换行 |
 | Plugin 一直 claim 不到消息 | 检查用户 `command` 权限、订阅、delivery 状态和 worker 配置 |
 | delivery 持续 retry/dead | 查看脱敏错误码、Hermes QQBot 状态和消息长度限制 |
@@ -384,6 +398,9 @@ docker compose --env-file .env -f compose.yml logs --since 10m \
 ## 参考文档
 
 - [核心、数据、API 和投递契约](CONTRACT.md)
-- [Provider 开发说明](docs/provider-development.md)
-- [内置事件目录](docs/event-catalog.md)
+- [wf-data Publisher](publishers/wf-data/README.md) 与
+  [设计稿](docs/wf-data-publisher.md)
+- [demo-reminder Publisher](publishers/demo-reminder/README.md)（参数化延迟提醒演示）
+- [Publisher 开发说明](docs/provider-development.md)
+- [事件目录状态](docs/event-catalog.md)
 - [AutoQQ Hermes Plugin](https://github.com/fkYang/hermes_qqbot_plugin)

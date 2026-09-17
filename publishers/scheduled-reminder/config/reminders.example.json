@@ -1,0 +1,25 @@
+{
+  "event_key": "reminder.scheduled.triggered",
+  "schema_version": 1,
+  "max_due_per_tick": 100,
+  "reminders": [
+    {
+      "id": "sunday-status",
+      "kind": "weekly",
+      "timezone": "Asia/Shanghai",
+      "weekdays": ["sunday"],
+      "times": ["09:00", "18:30"],
+      "title": "周日提醒",
+      "text": "这是本周设定的提醒。"
+    },
+    {
+      "id": "two-hour-review",
+      "kind": "interval",
+      "timezone": "Asia/Shanghai",
+      "anchor_at": "2026-09-16T09:00:00+08:00",
+      "every_minutes": 120,
+      "title": "定时回顾",
+      "text": "请进行一次简短回顾。"
+    }
+  ]
+}

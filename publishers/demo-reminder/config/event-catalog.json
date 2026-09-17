@@ -1,0 +1,17 @@
+{
+  "event_key": "demo.reminder.scheduled",
+  "display_name": "演示定时提醒",
+  "description": "由受控 demo-reminder Publisher 发布的一次性提醒。调用方用 delay（例如 5m、10min）或 at 指定提醒时刻，Publisher 把它写成 notify_at，EventServer 到点再投递给订阅者。",
+  "schema_version": 1,
+  "subscribable": true,
+  "payload_schema": {
+    "type": "object",
+    "required": ["request_id", "delay_seconds", "notify_at"],
+    "properties": {
+      "request_id": {"type": "string", "minLength": 1, "maxLength": 128},
+      "delay_seconds": {"type": "integer", "minimum": 0, "maximum": 86400},
+      "notify_at": {"type": "string", "minLength": 20, "maxLength": 64}
+    },
+    "additionalProperties": false
+  }
+}

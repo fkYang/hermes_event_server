@@ -10,3 +10,6 @@ htmlcov/
 *.egg-info/
 dist/
 build/
+
+# wf-data Publisher 只用于内部部署（依赖内网数据源），不随仓库发布
+publishers/wf-data/

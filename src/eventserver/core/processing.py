@@ -59,7 +59,13 @@ class ObservationProcessor:
         events = provider.evaluate(previous, current)
         self._save_observation(provider_instance_id, current)
         publications = tuple(
-            PublicationService(self.session, self.registry).publish(event) for event in events
+            PublicationService(self.session).publish(
+                event,
+                {
+                    "default": self.registry.provider_for_event(event.event_key).render(event),
+                },
+            )
+            for event in events
         )
         baseline_created = checkpoint.last_identity is None
         checkpoint.last_identity = current.identity

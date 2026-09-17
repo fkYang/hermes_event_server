@@ -1,0 +1,22 @@
+services:
+  autoqq-scheduled-reminder:
+    image: autoqq-scheduled-reminder-publisher:0.1.1
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      EVENTSERVER_URL: http://autoqq-eventserver-api:8080
+      PUBLISHER_TOKEN: ${SCHEDULED_REMINDER_PUBLISHER_TOKEN:?Set in local .env}
+      REMINDER_CONFIG_FILE: /config/reminders.json
+    volumes:
+      - ./config/reminders.json:/config/reminders.json:ro
+    networks:
+      - hermes_net
+
+networks:
+  hermes_net:
+    external: true
+    name: ${HERMES_DOCKER_NETWORK:-my_web_net}

@@ -1,0 +1,43 @@
+# demo-reminder Publisher 的独立部署定义：一个带鉴权的演示入口 + EventServer 发布客户端。
+#
+# 生产环境由 deploy/compose.yml 统一管理时，把下面的服务并入那份文件即可。
+name: ${COMPOSE_PROJECT_NAME:-autoqq-demo-reminder}
+
+services:
+  autoqq-demo-reminder:
+    image: ${DEMO_REMINDER_IMAGE:-autoqq-demo-reminder:0.1.0}
+    environment:
+      EVENTSERVER_URL: ${EVENTSERVER_URL:-http://autoqq-eventserver-api:8080}
+      PUBLISHER_TOKEN: ${PUBLISHER_TOKEN:?Set PUBLISHER_TOKEN in .env}
+      INGRESS_TOKEN: ${INGRESS_TOKEN:?Set INGRESS_TOKEN in .env}
+      HTTP_PORT: "8080"
+      DEFAULT_DELAY_SECONDS: ${DEFAULT_DELAY_SECONDS:-300}
+      MAX_DELAY_SECONDS: ${MAX_DELAY_SECONDS:-3600}
+      REQUEST_TIMEOUT_SECONDS: ${REQUEST_TIMEOUT_SECONDS:-10}
+      DISPLAY_TIMEZONE: ${DISPLAY_TIMEZONE:-Asia/Shanghai}
+    ports:
+      - "${DEMO_REMINDER_PORT:-18090}:8080"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).read()"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - hermes_net
+
+networks:
+  hermes_net:
+    external: true
+    name: ${HERMES_DOCKER_NETWORK:-hermes_net}

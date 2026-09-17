@@ -18,17 +18,13 @@ class Settings(BaseSettings):
     internal_api_token: str = ""
     initial_admin_openids: Annotated[tuple[str, ...], NoDecode] = ()
     default_timezone: str = "Asia/Shanghai"
-    enabled_providers: Annotated[tuple[str, ...], NoDecode] = (
-        "warframe.cetus_night",
-        "warframe.konzu_rotation",
-        "warframe.ghoul_event",
-    )
     delivery_max_attempts: int = Field(default=5, ge=1, le=20)
     delivery_default_lease_seconds: int = Field(default=60, ge=10, le=600)
+    delivery_max_schedule_horizon_seconds: int = Field(default=86400, ge=60, le=604800)
     provider_default_timeout_seconds: float = Field(default=10, gt=0, le=60)
     provider_scheduler_tick_seconds: float = Field(default=5, ge=1, le=300)
 
-    @field_validator("initial_admin_openids", "enabled_providers", mode="before")
+    @field_validator("initial_admin_openids", mode="before")
     @classmethod
     def parse_csv(cls, value: object) -> object:
         if isinstance(value, str):

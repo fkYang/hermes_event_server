@@ -24,6 +24,9 @@ def list_events(session: Session = Depends(get_db)) -> list[EventResponse]:
             description=item.description,
             schema_version=item.schema_version,
             deprecated=item.deprecated_at is not None,
+            match_key_field=item.match_key_field,
+            match_keys_required=item.match_keys_required,
+            match_key_options=list(item.match_key_options or []),
         )
         for item in events
     ]

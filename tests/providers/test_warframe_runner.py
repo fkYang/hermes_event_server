@@ -5,7 +5,6 @@ from pathlib import Path
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
-from eventserver.bootstrap import bootstrap
 from eventserver.db.models import ObservationRecord, ProviderCheckpoint, ProviderInstance
 from eventserver.providers.warframe.runner import WarframePollRunner
 
@@ -26,11 +25,28 @@ def load_payload() -> dict[str, object]:
     return json.loads(FIXTURE.read_text())
 
 
+def seed_legacy_instances(session: Session) -> None:
+    for instance_id, provider_key, interval_seconds in (
+        ("warframe-cetus-pc", "warframe.cetus_night", 60),
+        ("warframe-konzu-pc", "warframe.konzu_rotation", 300),
+        ("warframe-ghoul-pc", "warframe.ghoul_event", 300),
+    ):
+        session.add(
+            ProviderInstance(
+                provider_instance_id=instance_id,
+                provider_key=provider_key,
+                capability="polling",
+                interval_seconds=interval_seconds,
+            )
+        )
+    session.commit()
+
+
 def test_runner_fetches_once_and_creates_three_baselines(
     session_factory: sessionmaker[Session],
 ) -> None:
     with session_factory() as session:
-        bootstrap(session, ())
+        seed_legacy_instances(session)
     client = FakeClient(load_payload())
 
     result = WarframePollRunner(session_factory, client=client, owner="runner-test").run_once()
@@ -48,7 +64,7 @@ def test_runner_isolates_one_malformed_provider(
     session_factory: sessionmaker[Session],
 ) -> None:
     with session_factory() as session:
-        bootstrap(session, ())
+        seed_legacy_instances(session)
     payload = load_payload()
     payload["Goals"] = "invalid"
 
